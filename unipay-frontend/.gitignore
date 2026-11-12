@@ -1,0 +1,17 @@
+# Dependencies and build output
+node_modules/
+dist/
+tsconfig.tsbuildinfo
+
+# Local environment files
+.env*
+!.env.example
+
+# Python test tooling and virtual environments
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+
+teste/pages/login-page/login_*.png
