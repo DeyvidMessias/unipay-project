@@ -81,7 +81,7 @@ O `pytest.ini` na raiz configura a descoberta dos 11 arquivos numerados em `unip
 python -m pytest -s -vv unipay-frontend/teste/pages/login-page/10detalhes_transacao_pix.py
 ```
 
-As evidências de tela são salvas em `unipay-frontend/teste/prints de teste/`, em uma pasta para cada teste.
+As evidências de tela são salvas em `unipay-frontend/teste/screenshots/`, em uma pasta para cada teste.
 
 ### Dados alterados pelos testes
 

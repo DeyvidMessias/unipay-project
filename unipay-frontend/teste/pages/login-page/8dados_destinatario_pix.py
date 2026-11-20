@@ -6,12 +6,12 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from fixos import CPF_DESTINO, EMAIL_TESTE, SENHA_TESTE
+from fixos import EMAIL_DESTINO, EMAIL_TESTE, NOME_DESTINO, SENHA_TESTE
 
 
 def capturar_tela(navegador, resultado):
     # Aqui fica a pasta das prints desse teste.
-    pasta_raiz = Path(__file__).resolve().parents[2] / "prints de teste" / "8dados_destinatario_pix"
+    pasta_raiz = Path(__file__).resolve().parents[2] / "screenshots" / "8dados_destinatario_pix"
     pasta_raiz.mkdir(parents=True, exist_ok=True)
 
     # Pego a data e a hora pra não repetir o nome da print.
@@ -26,7 +26,7 @@ def capturar_tela(navegador, resultado):
         print("\nNão foi possível salvar a evidência.")
 
 
-def test_ct08_dados_destinatario_pix():
+def test_ct08_consultar_destinatario_pix():
     opcoes = webdriver.ChromeOptions()
     opcoes.add_experimental_option("prefs", {
         "credentials_enable_service": False,
@@ -60,45 +60,30 @@ def test_ct08_dados_destinatario_pix():
         )
         assert titulo_menu.text == "MENU"
 
-        # Abro o PIX e escolho a opção de outro banco.
+        # Abro o PIX e informo a chave cadastrada da conta de destino.
         navegador.find_element(By.ID, "make-pix").click()
-        botao_outro_banco = WebDriverWait(navegador, 10).until(
-            EC.element_to_be_clickable((By.ID, "btn-pix-outro-banco"))
+        campo_chave = WebDriverWait(navegador, 10).until(
+            EC.visibility_of_element_located((By.ID, "pix-recipient-key"))
         )
-        botao_outro_banco.click()
+        campo_chave.send_keys(EMAIL_DESTINO)
+        time.sleep(1)
+        navegador.find_element(By.ID, "pix-next-key").click()
         time.sleep(1)
 
-        # Coloco os dados do destinatário.
-        campo_cpf = WebDriverWait(navegador, 10).until(
-            EC.visibility_of_element_located((By.ID, "input-cpf-destinatario"))
+        # Confiro se o sistema encontrou a conta certa antes de informar o valor.
+        campo_valor = WebDriverWait(navegador, 10).until(
+            EC.visibility_of_element_located((By.ID, "pix-amount-input"))
         )
-        campo_cpf.send_keys(CPF_DESTINO)
-        time.sleep(1)
-        navegador.find_element(By.ID, "input-email-destinatario").send_keys("destinatario@outrobanco.test")
-        time.sleep(1)
-        navegador.find_element(By.ID, "input-valor-pix").send_keys("10,00")
-        time.sleep(1)
-
-        # Avanço pra conferir os dados antes de continuar.
-        navegador.find_element(By.ID, "btn-avancar-pix").click()
-        time.sleep(1)
-        tela_confirmacao = WebDriverWait(navegador, 10).until(
-            EC.visibility_of_element_located((By.ID, "pix-external-confirmation"))
-        )
-
-        cpf_confirmacao = navegador.find_element(By.ID, "confirmacao-cpf-destinatario").text
-        email_confirmacao = navegador.find_element(By.ID, "confirmacao-email-destinatario").text
-        valor_confirmacao = navegador.find_element(By.ID, "confirmacao-valor-pix").text.replace("\xa0", " ")
+        nome_confirmacao = navegador.find_element(By.CSS_SELECTOR, ".recipient-pill strong").text
+        chave_confirmacao = navegador.find_element(By.CSS_SELECTOR, ".recipient-pill small:last-child").text
         mensagens_erro = navegador.find_elements(By.CSS_SELECTOR, "[role='alert']")
 
-        assert tela_confirmacao.is_displayed()
+        assert campo_valor.is_displayed()
         assert len(mensagens_erro) == 0
-        assert cpf_confirmacao == "168.995.350-09"
-        assert email_confirmacao == "destinatario@outrobanco.test"
-        assert "R$" in valor_confirmacao
-        assert "10,00" in valor_confirmacao
+        assert nome_confirmacao == NOME_DESTINO
+        assert chave_confirmacao == EMAIL_DESTINO
 
-        # Salvo a print da confirmação.
+        # Salvo a print com os dados do destinatário encontrado.
         capturar_tela(navegador, "sucesso")
 
     except Exception:

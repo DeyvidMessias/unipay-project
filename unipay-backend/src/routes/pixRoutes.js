@@ -35,10 +35,11 @@ pixRoutes.get("/recent", asyncRoute(async (request, response) => {
 }));
 
 pixRoutes.post("/transfers", asyncRoute(async (request, response) => {
-  const pixKey = normalizePixKey(request.body.pixKey);
-  const amount = Number(request.body.amount);
+  const body = request.body ?? {};
+  const pixKey = normalizePixKey(body.pixKey);
+  const amount = Number(body.amount);
   if (!pixKey || pixKey.length > 60) throw new HttpError(400, "Informe uma chave PIX válida.");
-  if (!Number.isFinite(amount) || amount <= 0 || Math.round(amount * 100) / 100 !== amount) {
+  if (!Number.isFinite(amount) || amount <= 0 || Math.round(amount * 100) / 100 !== amount || !Number.isSafeInteger(Math.round(amount * 100))) {
     throw new HttpError(400, "Informe um valor válido para o PIX.");
   }
 
@@ -92,11 +93,11 @@ pixRoutes.post("/transfers", asyncRoute(async (request, response) => {
 
     const [outgoingCounterparty] = await connection.execute(
       "INSERT INTO contraparte (nome, cpf, idUsuario, tipo) VALUES (?, ?, ?, 'pix')",
-      [recipient.nome.slice(0, 30), recipient.cpf, recipient.idUsuario],
+      [recipient.nome, recipient.cpf, recipient.idUsuario],
     );
     const [incomingCounterparty] = await connection.execute(
       "INSERT INTO contraparte (nome, cpf, idUsuario, tipo) VALUES (?, ?, ?, 'pix')",
-      [sender.nome.slice(0, 30), sender.cpf, request.userId],
+      [sender.nome, sender.cpf, request.userId],
     );
 
     const [outgoingTransaction] = await connection.execute(

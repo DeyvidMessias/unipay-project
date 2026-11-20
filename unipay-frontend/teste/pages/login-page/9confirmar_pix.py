@@ -18,7 +18,7 @@ def ler_saldo(navegador):
 
 def capturar_tela(navegador, resultado):
     # Aqui fica a pasta das prints desse teste.
-    pasta_raiz = Path(__file__).resolve().parents[2] / "prints de teste" / "9confirmar_pix"
+    pasta_raiz = Path(__file__).resolve().parents[2] / "screenshots" / "9confirmar_pix"
     pasta_raiz.mkdir(parents=True, exist_ok=True)
 
     # Pego a data e a hora pra não repetir o nome da print.

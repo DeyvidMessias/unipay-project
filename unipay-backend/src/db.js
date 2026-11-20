@@ -14,7 +14,7 @@ export const pool = mysql.createPool({
   dateStrings: true,
 });
 
-export async function ensureCounterpartyCpfColumn() {
+export async function ensureCounterpartySchema() {
   const [rows] = await pool.execute(
     `SELECT COUNT(*) AS columnCount
        FROM information_schema.COLUMNS
@@ -31,6 +31,17 @@ export async function ensureCounterpartyCpfColumn() {
         SET cp.cpf = u.cpf
       WHERE cp.cpf IS NULL`,
   );
+
+  const [nameColumns] = await pool.execute(
+    `SELECT CHARACTER_MAXIMUM_LENGTH AS nameLength
+       FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'contraparte'
+        AND COLUMN_NAME = 'nome'`,
+  );
+  if (Number(nameColumns[0]?.nameLength ?? 0) < 255) {
+    await pool.execute("ALTER TABLE contraparte MODIFY COLUMN nome VARCHAR(255) NOT NULL");
+  }
 }
 
 export async function withTransaction(callback) {

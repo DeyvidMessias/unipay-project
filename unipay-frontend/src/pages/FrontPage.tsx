@@ -9,6 +9,13 @@ import { TransactionList } from "../components/TransactionList";
 type FrontPageProps = { user: User; onPix: () => void; onLogout: () => void };
 
 export function FrontPage({ user, onPix, onLogout }: FrontPageProps) {
+  const now = new Date();
+  const dateLabel = new Intl.DateTimeFormat("pt-BR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(now).toLocaleUpperCase("pt-BR");
+  const greeting = now.getHours() < 12 ? "Bom dia" : now.getHours() < 18 ? "Boa tarde" : "Boa noite";
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [balanceHidden, setBalanceHidden] = useState(false);
@@ -22,8 +29,8 @@ export function FrontPage({ user, onPix, onLogout }: FrontPageProps) {
   const handleDeposit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const amount = Number(depositAmount.replace(",", "."));
-    if (!Number.isFinite(amount) || amount <= 0) {
-      setDepositError("Informe um valor maior que zero.");
+    if (!Number.isFinite(amount) || amount <= 0 || Math.round(amount * 100) / 100 !== amount || !Number.isSafeInteger(Math.round(amount * 100))) {
+      setDepositError("Informe um valor positivo com até duas casas decimais.");
       return;
     }
     setDepositBusy(true);
@@ -31,9 +38,14 @@ export function FrontPage({ user, onPix, onLogout }: FrontPageProps) {
     try {
       const result = await api.deposit(amount);
       setBalance(result.balance);
-      setTransactions(await api.getTransactions());
       setDepositAmount("");
       setDepositOpen(false);
+      try {
+        setTransactions(await api.getTransactions());
+        setLoadError("");
+      } catch (refreshError) {
+        setLoadError((refreshError as Error).message);
+      }
     } catch (error) {
       setDepositError((error as Error).message);
     } finally {
@@ -61,7 +73,7 @@ export function FrontPage({ user, onPix, onLogout }: FrontPageProps) {
       <AccountSidebar onPix={onPix} onLogout={onLogout} />
       <section className="dash-main">
         <div className="dash-header">
-          <div><span className="eyebrow">QUARTA-FEIRA, 28 DE OUTUBRO</span><h1>Bom dia, {user.name.split(" ")[0]} <span className="wave">✳</span></h1><p>Aqui está o resumo da sua conta.</p></div>
+          <div><span className="eyebrow">{dateLabel}</span><h1>{greeting}, {user.name.split(" ")[0]} <span className="wave">✳</span></h1><p>Aqui está o resumo da sua conta.</p></div>
           <div className="dash-user"><span className="online-dot" /> Conta pessoal <span className="avatar">{user.name.slice(0, 1).toUpperCase()}</span></div>
         </div>
         {loadError && <p className="error-msg" role="alert">{loadError}</p>}

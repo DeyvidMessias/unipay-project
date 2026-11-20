@@ -19,7 +19,7 @@ def ler_saldo(navegador):
 
 def capturar_tela(navegador, resultado):
     # Aqui fica a pasta das prints desse teste.
-    pasta_raiz = Path(__file__).resolve().parents[2] / "prints de teste" / "11atualizacao_conta_pix"
+    pasta_raiz = Path(__file__).resolve().parents[2] / "screenshots" / "11atualizacao_conta_pix"
     pasta_raiz.mkdir(parents=True, exist_ok=True)
 
     data_hora = datetime.now().strftime("%Y-%m-%d_%H-%M-%S-%f")

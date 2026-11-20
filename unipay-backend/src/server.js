@@ -2,7 +2,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
-import { ensureCounterpartyCpfColumn, pool } from "./db.js";
+import { ensureCounterpartySchema, pool } from "./db.js";
 import { requireAuth } from "./auth.js";
 import { HttpError } from "./http.js";
 import { accountRoutes } from "./routes/accountRoutes.js";
@@ -53,7 +53,7 @@ app.use((error, _request, response, _next) => {
 let server;
 
 async function start() {
-  await ensureCounterpartyCpfColumn();
+  await ensureCounterpartySchema();
   server = app.listen(port, "0.0.0.0", () => {
     console.log(`UniPay API pronta na porta ${port}.`);
   });
