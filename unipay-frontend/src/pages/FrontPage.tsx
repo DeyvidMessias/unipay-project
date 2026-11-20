@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { ArrowLeftRight, ArrowRight } from "lucide-react";
 import { api, type Transaction, type User } from "../api";
 import { AccountSidebar } from "../components/AccountSidebar";
@@ -14,6 +14,32 @@ export function FrontPage({ user, onPix, onLogout }: FrontPageProps) {
   const [balanceHidden, setBalanceHidden] = useState(false);
   const [balance, setBalance] = useState(user.balance);
   const [loadError, setLoadError] = useState("");
+  const [depositOpen, setDepositOpen] = useState(false);
+  const [depositAmount, setDepositAmount] = useState("");
+  const [depositError, setDepositError] = useState("");
+  const [depositBusy, setDepositBusy] = useState(false);
+
+  const handleDeposit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const amount = Number(depositAmount.replace(",", "."));
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setDepositError("Informe um valor maior que zero.");
+      return;
+    }
+    setDepositBusy(true);
+    setDepositError("");
+    try {
+      const result = await api.deposit(amount);
+      setBalance(result.balance);
+      setTransactions(await api.getTransactions());
+      setDepositAmount("");
+      setDepositOpen(false);
+    } catch (error) {
+      setDepositError((error as Error).message);
+    } finally {
+      setDepositBusy(false);
+    }
+  };
 
   useEffect(() => {
     let active = true;
@@ -42,8 +68,13 @@ export function FrontPage({ user, onPix, onLogout }: FrontPageProps) {
         <BalanceCard balance={balance} hidden={balanceHidden} onToggle={() => setBalanceHidden(!balanceHidden)} />
         <div className="quick-row">
           <button id="make-pix" className="quick-action pix-action" onClick={onPix}><span className="quick-icon">✳</span><span><strong>Fazer PIX</strong><small>Envie em segundos</small></span><ArrowRight size={17} /></button>
-          <button className="quick-action"><span className="quick-icon pale">＋</span><span><strong>Adicionar dinheiro</strong><small>Traga dinheiro pra cá</small></span><ArrowRight size={17} /></button>
+          <button id="open-deposit" className="quick-action" onClick={() => { setDepositOpen(!depositOpen); setDepositError(""); }} aria-expanded={depositOpen}><span className="quick-icon pale">＋</span><span><strong>Adicionar dinheiro</strong><small>Traga dinheiro pra cá</small></span><ArrowRight size={17} /></button>
         </div>
+        {depositOpen && <form className="deposit-form" onSubmit={handleDeposit}>
+          <label htmlFor="deposit-amount">Valor do depósito</label>
+          <div className="deposit-controls"><span>R$</span><input id="deposit-amount" type="number" min="0.01" step="0.01" value={depositAmount} onChange={(event) => setDepositAmount(event.target.value)} placeholder="0,00" required /><button id="confirm-deposit" type="submit" disabled={depositBusy}>{depositBusy ? "Salvando…" : "Confirmar"}</button></div>
+          {depositError && <p className="error-msg" role="alert">{depositError}</p>}
+        </form>}
         <TransactionList transactions={transactions} user={user} onSelect={setSelectedTransaction} />
         <footer className="dash-footer"><span>UniPay Instituição de Pagamento S.A. · CNPJ 00.000.000/0001-00</span><span>Feito para a vida real <span className="footer-star">✳</span></span></footer>
       </section>

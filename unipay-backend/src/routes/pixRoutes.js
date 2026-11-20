@@ -38,13 +38,13 @@ pixRoutes.post("/transfers", asyncRoute(async (request, response) => {
   const pixKey = normalizePixKey(request.body.pixKey);
   const amount = Number(request.body.amount);
   if (!pixKey || pixKey.length > 60) throw new HttpError(400, "Informe uma chave PIX válida.");
-  if (!Number.isFinite(amount) || amount <= 0 || Math.round(amount * 100) !== amount * 100) {
+  if (!Number.isFinite(amount) || amount <= 0 || Math.round(amount * 100) / 100 !== amount) {
     throw new HttpError(400, "Informe um valor válido para o PIX.");
   }
 
   const transfer = await withTransaction(async (connection) => {
     const [recipientRows] = await connection.execute(
-      `SELECT u.idUsuario, u.nome, cp.idChavePix, cp.chavePix
+      `SELECT u.idUsuario, u.nome, u.cpf, cp.idChavePix, cp.chavePix
          FROM chave_pix AS cp
          JOIN usuario AS u ON u.idUsuario = cp.idUsuario
         WHERE cp.chavePix = ?
@@ -58,7 +58,7 @@ pixRoutes.post("/transfers", asyncRoute(async (request, response) => {
     }
 
     const [accountRows] = await connection.execute(
-      `SELECT idUsuario, nome, saldo
+      `SELECT idUsuario, nome, cpf, saldo
          FROM usuario
         WHERE idUsuario IN (?, ?)
         ORDER BY idUsuario
@@ -91,12 +91,12 @@ pixRoutes.post("/transfers", asyncRoute(async (request, response) => {
     );
 
     const [outgoingCounterparty] = await connection.execute(
-      "INSERT INTO contraparte (nome, idUsuario, tipo) VALUES (?, ?, 'pix')",
-      [recipient.nome.slice(0, 30), recipient.idUsuario],
+      "INSERT INTO contraparte (nome, cpf, idUsuario, tipo) VALUES (?, ?, ?, 'pix')",
+      [recipient.nome.slice(0, 30), recipient.cpf, recipient.idUsuario],
     );
     const [incomingCounterparty] = await connection.execute(
-      "INSERT INTO contraparte (nome, idUsuario, tipo) VALUES (?, ?, 'pix')",
-      [sender.nome.slice(0, 30), request.userId],
+      "INSERT INTO contraparte (nome, cpf, idUsuario, tipo) VALUES (?, ?, ?, 'pix')",
+      [sender.nome.slice(0, 30), sender.cpf, request.userId],
     );
 
     const [outgoingTransaction] = await connection.execute(

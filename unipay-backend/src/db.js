@@ -14,6 +14,25 @@ export const pool = mysql.createPool({
   dateStrings: true,
 });
 
+export async function ensureCounterpartyCpfColumn() {
+  const [rows] = await pool.execute(
+    `SELECT COUNT(*) AS columnCount
+       FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'contraparte'
+        AND COLUMN_NAME = 'cpf'`,
+  );
+  if (Number(rows[0].columnCount) === 0) {
+    await pool.execute("ALTER TABLE contraparte ADD COLUMN cpf VARCHAR(11) NULL AFTER nome");
+  }
+  await pool.execute(
+    `UPDATE contraparte AS cp
+       JOIN usuario AS u ON u.idUsuario = cp.idUsuario
+        SET cp.cpf = u.cpf
+      WHERE cp.cpf IS NULL`,
+  );
+}
+
 export async function withTransaction(callback) {
   const connection = await pool.getConnection();
   try {
